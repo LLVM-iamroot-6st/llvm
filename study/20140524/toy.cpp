@@ -271,7 +271,7 @@ static ExprAST *ParsePrimary() {
   case tok_identifier: return ParseIdentifierExpr();
   case tok_number:     return ParseNumberExpr();
   case '(':            return ParseParenExpr();
-  case tok_if:         return ParseIfExpr();
+  //case tok_if:         return ParseIfExpr();
   }
 }
 
@@ -558,11 +558,12 @@ static void HandleTopLevelExpression() {
   // Evaluate a top-level expression into an anonymous function.
   if (FunctionAST *F = ParseTopLevelExpr()) {
     if (Function *LF = F->Codegen()) {
-#if 0
+
+#if 1 
 	  std::vector<GenericValue> noargs;
 	  GenericValue gv = TheExecutionEngine->runFunction(LF, noargs);
       outs()<<gv.DoubleVal;
-#endif
+#else
       // JIT the function, returning a function pointer.
       void *FPtr = TheExecutionEngine->getPointerToFunction(LF);
       
@@ -570,6 +571,7 @@ static void HandleTopLevelExpression() {
       // can call it as a native function.
       double (*FP)() = (double (*)())(intptr_t)FPtr;
       fprintf(stderr, "Evaluated to %f\n", FP());
+#endif
     }
   } else {
     // Skip token for error recovery.

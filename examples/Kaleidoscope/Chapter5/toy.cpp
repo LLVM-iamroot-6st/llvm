@@ -514,49 +514,90 @@ Value *IfExprAST::Codegen() {
   if (CondV == 0) return 0;
   
   // Convert condition to a bool by comparing equal to 0.0.
+  // %ifcond = fcmp one double %x, 0.000000e+00 생성
   CondV = Builder.CreateFCmpONE(CondV, 
                               ConstantFP::get(getGlobalContext(), APFloat(0.0)),
                                 "ifcond");
-  
+  //부모 함수 객체를 가져온다.
   Function *TheFunction = Builder.GetInsertBlock()->getParent();
   
   // Create blocks for the then and else cases.  Insert the 'then' block at the
   // end of the function.
-  BasicBlock *ThenBB = BasicBlock::Create(getGlobalContext(), "then", TheFunction);
-  BasicBlock *ElseBB = BasicBlock::Create(getGlobalContext(), "else");
-  BasicBlock *MergeBB = BasicBlock::Create(getGlobalContext(), "ifcont");
-  
-  Builder.CreateCondBr(CondV, ThenBB, ElseBB);
+  //부모 함수 TheFunction의 Basic Block List에 생성한 TheBB Basic Block을 추가한다.
+  //이름 설정.
+  BasicBlock *ThenBB = BasicBlock::Create(getGlobalContext(), "then", TheFunction); // (1)
+  //이름 설정만 한다.
+  BasicBlock *ElseBB = BasicBlock::Create(getGlobalContext(), "else"); // (2)
+  BasicBlock *MergeBB = BasicBlock::Create(getGlobalContext(), "ifcont"); // (3)
+ 
+  // br i1 %ifcond, label %then, label %else 생성
+  Builder.CreateCondBr(CondV, ThenBB, ElseBB); // (4)
   
   // Emit then value.
-  Builder.SetInsertPoint(ThenBB);
+  // Builder의 BB와 InsertPtr을 ThenBB, ThenBB->end()로 설정
+  Builder.SetInsertPoint(ThenBB); // (5)
   
-  Value *ThenV = Then->Codegen();
+  //Then Expression 코드 생성. 
+  Value *ThenV = Then->Codegen(); // (6)
   if (ThenV == 0) return 0;
   
-  Builder.CreateBr(MergeBB);
+  // br label %ifcont 생성.
+  Builder.CreateBr(MergeBB); // (7)
   // Codegen of 'Then' can change the current block, update ThenBB for the PHI.
-  ThenBB = Builder.GetInsertBlock();
+  // Then->Codegen(); 시 ThenBB에 속하는 하위 Basic Block 이 생길수 있기때문에 
+  // 즉, IfExprAST::Codegen 가 재귀적으로 불릴수 있기때문에 IfExprAST::ThenBB가 변경될수 있다.
+  // 이후 같은 레벨의 코드로 돌아오면 ThenBB를 원복해야 하기 때문에  Builder.GetInsertBlock()
+  // 로 다시 업데이트 해준다.
+  // 즉, ThenBB에는 가장 깊은 Depth의 BasicBlock의 첫 부분을 포인팅하게 된다.
+  ThenBB = Builder.GetInsertBlock(); // (8)
   
   // Emit else block.
-  TheFunction->getBasicBlockList().push_back(ElseBB);
-  Builder.SetInsertPoint(ElseBB);
-  
-  Value *ElseV = Else->Codegen();
+  // TheFunction의  Basic Block List에 push_back
+  TheFunction->getBasicBlockList().push_back(ElseBB); // (9)
+  // Builder의 BB와 InsertPtr을 각각 ElseBB, ElseBB->end()로 설정.
+  Builder.SetInsertPoint(ElseBB); // (10)
+ 
+  //Else expression 코드 생성 
+  Value *ElseV = Else->Codegen(); // (11)
   if (ElseV == 0) return 0;
   
-  Builder.CreateBr(MergeBB);
+  //br label %ifcont 생성
+  Builder.CreateBr(MergeBB); // (12)
+
   // Codegen of 'Else' can change the current block, update ElseBB for the PHI.
-  ElseBB = Builder.GetInsertBlock();
+  //line:549 ThenBB = Builder.GetInsertBlock() 와 같은 경우 인듯??? 
+  ElseBB = Builder.GetInsertBlock(); // (13)
   
   // Emit merge block.
-  TheFunction->getBasicBlockList().push_back(MergeBB);
-  Builder.SetInsertPoint(MergeBB);
-  PHINode *PN = Builder.CreatePHI(Type::getDoubleTy(getGlobalContext()), 2,
-                                  "iftmp");
+  // TheFunction의  Basic Block List에 push_back
+  TheFunction->getBasicBlockList().push_back(MergeBB); // (14)
+  // Builder의 BB와 InsertPtr을 각각 MergeBB, MergeBB->end()로 설정.
+  Builder.SetInsertPoint(MergeBB); // (15)
   
-  PN->addIncoming(ThenV, ThenBB);
-  PN->addIncoming(ElseV, ElseBB);
+  //%iftmp = phi double [ %calltmp, %then ], [ %calltmp1, %else ]
+  PHINode *PN = Builder.CreatePHI(Type::getDoubleTy(getGlobalContext()), 2,
+                                  "iftmp"); // (16)
+  PN->addIncoming(ThenV, ThenBB); // (17)
+  PN->addIncoming(ElseV, ElseBB); // (18)
+
+  /***
+	TheFunction
+	[br CondV, ThenBB, ElseBB] (4)
+		| (1)
+	ThenBB (1)   <--- InsertPoint (5),  ---> GetInsertBlock(8)
+	[Then->codegen()] (6)
+	[br MergeBB] (7)
+		| (9)
+	ElseBB (2)   <--- InsertPoint (10), ---> GetInsertBlock (13)
+	[Else->codegen()] (11)
+	[br MergeBB] (12) 
+		| (14)
+	MergeBB (3)  <--- InsertPoint (15)
+	[PN*] (16)
+		[phi (ThenV, ThenBB), (ElseV, ElseBB)] (17, 18)
+
+  (8, 13)번 코드는, 중첩 BasicBlock인 경우 가장 깊은 Depth의 BasicBlock을 가리키도록 한다.
+  ***/
   return PN;
 }
 
@@ -576,18 +617,31 @@ Value *ForExprAST::Codegen() {
   //   endcond = endexpr
   //   br endcond, loop, endloop
   // outloop:
-  
+
+/*
+extern putchard(char)
+def printstar(n)
+  for i = (start expr), i < n, 1.0 in
+    putchard(42);  # ascii 42 = '*'
+
+# print 100 '*' characters
+printstar(100);
+*/
   // Emit the start code first, without 'variable' in scope.
+  // (start expr) 에 대한 코드 생성
   Value *StartVal = Start->Codegen();
   if (StartVal == 0) return 0;
   
   // Make the new basic block for the loop header, inserting after current
   // block.
   Function *TheFunction = Builder.GetInsertBlock()->getParent();
+  //현재 설정된 Basic Block을 PreheaderBB 저장 
   BasicBlock *PreheaderBB = Builder.GetInsertBlock();
+  //loop Basic Block에 생성해서 TheFunction의 Basic Block List추가
   BasicBlock *LoopBB = BasicBlock::Create(getGlobalContext(), "loop", TheFunction);
   
   // Insert an explicit fall through from the current block to the LoopBB.
+  // br label %loop 생성
   Builder.CreateBr(LoopBB);
 
   // Start insertion in LoopBB.
@@ -595,20 +649,24 @@ Value *ForExprAST::Codegen() {
   
   // Start the PHI node with an entry for Start.
   PHINode *Variable = Builder.CreatePHI(Type::getDoubleTy(getGlobalContext()), 2, VarName.c_str());
+  //caller 컨트롤블록이 PreheaderBB 일 경우 i에 StartVal 저장.
   Variable->addIncoming(StartVal, PreheaderBB);
   
   // Within the loop, the variable is defined equal to the PHI node.  If it
   // shadows an existing variable, we have to restore it, so save it now.
+  // 같은 이름의 변수가 이전에 쓰일수 있으므로 이전 변수를 임시 보관
   Value *OldVal = NamedValues[VarName];
   NamedValues[VarName] = Variable;
   
   // Emit the body of the loop.  This, like any other expr, can change the
   // current BB.  Note that we ignore the value computed by the body, but don't
   // allow an error.
+  //%calltmp = call double @putchard(double 4.200000e+01) 생성
   if (Body->Codegen() == 0)
     return 0;
   
   // Emit the step value.
+  // Step 값 계산 없을 경우 1.0로 설정
   Value *StepVal;
   if (Step) {
     StepVal = Step->Codegen();
@@ -618,21 +676,27 @@ Value *ForExprAST::Codegen() {
     StepVal = ConstantFP::get(getGlobalContext(), APFloat(1.0));
   }
   
+  // %nextvar = fadd double %i, 1.000000e+00 생성
   Value *NextVar = Builder.CreateFAdd(Variable, StepVal, "nextvar");
 
   // Compute the end condition.
+  //  %cmptmp = fcmp ult double %i, %n 생성
   Value *EndCond = End->Codegen();
   if (EndCond == 0) return EndCond;
   
   // Convert condition to a bool by comparing equal to 0.0.
+  // %loopcond = fcmp one double %booltmp, 0.000000e+00
   EndCond = Builder.CreateFCmpONE(EndCond, 
                               ConstantFP::get(getGlobalContext(), APFloat(0.0)),
                                   "loopcond");
   
   // Create the "after loop" block and insert it.
+  //  LoopBB안에 또다른 Basic Block 이 생길수 있으므로 이에대한 업데이트
   BasicBlock *LoopEndBB = Builder.GetInsertBlock();
+  // afterloop Basic Block 생성
   BasicBlock *AfterBB = BasicBlock::Create(getGlobalContext(), "afterloop", TheFunction);
   
+  //  br i1 %loopcond, label %loop, label %afterloop 생성
   // Insert the conditional branch into the end of LoopEndBB.
   Builder.CreateCondBr(EndCond, LoopBB, AfterBB);
   
@@ -640,6 +704,8 @@ Value *ForExprAST::Codegen() {
   Builder.SetInsertPoint(AfterBB);
   
   // Add a new entry to the PHI node for the backedge.
+  // %i = phi double [ 1.000000e+00, %entry ], [ %nextvar, %loop ]
+  // 에서 [ %nextvar, %loop ] 조건 생성
   Variable->addIncoming(NextVar, LoopEndBB);
   
   // Restore the unshadowed variable.
