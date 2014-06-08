@@ -9,7 +9,7 @@ reference : 1) http://en.wikipedia.org/wiki/Operator-precedence_parser
 			2) http://llvm.org/docs/tutorial/LangImpl2.html
 
 But this is Not fully implemented caculator, meaning that it runs as very limited one.
-1. It can't parse any number that has more than two digit number and any sub-expression.
+1. It can't parse any number that has more than two digit number or any sub-expression.
    So, all operands must be [0-9]
    1+2*4-2 --> OK
    1+22*44-2 --> NO!!
@@ -22,7 +22,7 @@ Please improve me! :)
 class calc
 {
 private:
-	char CurTok;// array index of Current Token
+	int CurTokIdx;// array index of Current Token
 	std::map<char, int> op_precedence;
 	std::string Input;
 
@@ -37,8 +37,8 @@ private:
 				return LHS;
 			}
 
-			char OP = Input[CurTok++];
-			int RHS = Input[CurTok++] - 48;
+			char OP = Input[CurTokIdx++];
+			int RHS = Input[CurTokIdx++] - 48;
 
 			int NextPrec = GetOpPrecedence();
 			if(TokPrec < NextPrec)
@@ -74,14 +74,14 @@ private:
 
 	int GetOpPrecedence()
 	{
-		if(CurTok >= Input.size())
+		if(CurTokIdx >= Input.size())
 		{
 			return -1;
 		}
 
-		if(op_precedence[Input[CurTok]] > 0)
+		if(op_precedence[Input[CurTokIdx]] > 0)
 		{
-			return op_precedence[Input[CurTok]]; 
+			return op_precedence[Input[CurTokIdx]]; 
 		}
 
 		return -1;
@@ -99,7 +99,7 @@ public:
 	int DoCalc(const std::string& input)
 	{
 		Input = input;	
-		CurTok = 1;
+		CurTokIdx = 1;
 		binaryCalc(0, input[0] - 48);
 	}
 };
@@ -111,7 +111,7 @@ int main(void)
 	std::cin>>input;
 
 	calc c;
-	std::cout<<c.DoCalc(input);
+	std::cout<<c.DoCalc(input)<<std::endl;
 	return 0;
 }
 
