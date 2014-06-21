@@ -388,21 +388,36 @@ static ExprAST *ParsePrimary() {
 /// unary
 ///   ::= primary
 ///   ::= '!' unary
+/*
+eg) !-(expr)
+*/
 static ExprAST *ParseUnary() {
   // If the current token is not an operator, it must be a primary expr.
+  // CurTok 이 아스키가 아니거나  '(' or  ')' 이면 ParsePrimary 로 파싱.  
+  // 1. !-(expr) 에서 !가 CurTok
+  // 2. !-(expr) 에서 -가 CurTok
+  // 3. !-(expr) 에서 (가 CurTok 이므로 ParsePrimary 를 실행뒤 리턴.
   if (!isascii(CurTok) || CurTok == '(' || CurTok == ',')
     return ParsePrimary();
   
   // If this is a unary operator, read it.
+  // 1.Opc 가 ! 
+  // 2.Opc 가 -
   int Opc = CurTok;
+  // 1. !-(expr) 에서 -가 CurTok 
+  // 2. !-(expr) 에서 (가 CurTok 
   getNextToken();
+  // ParseUnary recursive call 
+  // 4. 3에서 ParsePrimary의 리턴값(ExprAST)과 2의 Opc -를 가지고 UnaryExprAST생성후 리턴
+  // 5. 마찬가지고 4에서 생성한 UnaryExprAST를 가지고 1의 Opc !를 가지고 UnaryExprAST 생성 후 리턴 
   if (ExprAST *Operand = ParseUnary())
     return new UnaryExprAST(Opc, Operand);
   return 0;
 }
 
 /// binoprhs
-///   ::= ('+' unary)*
+///   ::= ('+' unary)i*
+// 1 + 2 * (!3) - 4
 static ExprAST *ParseBinOpRHS(int ExprPrec, ExprAST *LHS) {
   // If this is a binop, find its precedence.
   while (1) {
