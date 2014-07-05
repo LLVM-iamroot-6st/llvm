@@ -55,6 +55,7 @@ void BrainF::header(LLVMContext& C) {
   //Function prototypes
 
   //declare void @llvm.memset.p0i8.i32(i8 *, i8, i32, i32, i1)
+  // Type : int8*, int32
   Type *Tys[] = { Type::getInt8PtrTy(C), Type::getInt32Ty(C) };
   Function *memset_func = Intrinsic::getDeclaration(module, Intrinsic::memset,
                                                     Tys);
@@ -75,19 +76,32 @@ void BrainF::header(LLVMContext& C) {
   brainf_func = cast<Function>(module->
     getOrInsertFunction("brainf", Type::getVoidTy(C), NULL));
 
+  // brainf 함수의 BasicBlock
   builder = new IRBuilder<>(BasicBlock::Create(C, label, brainf_func));
 
+  // Memory allocation
   //%arr = malloc i8, i32 %d
+  // int 값을 사용하기 위해 Mapping Class
   ConstantInt *val_mem = ConstantInt::get(C, APInt(32, memtotal));
   BasicBlock* BB = builder->GetInsertBlock();
   Type* IntPtrTy = IntegerType::getInt32Ty(C);
   Type* Int8Ty = IntegerType::getInt8Ty(C);
   Constant* allocsize = ConstantExpr::getSizeOf(Int8Ty);
+  // getTurncOrBitCast : size가 같으면 bitCast,
   allocsize = ConstantExpr::getTruncOrBitCast(allocsize, IntPtrTy);
+  // BranF tape 영역 할당
   ptr_arr = CallInst::CreateMalloc(BB, IntPtrTy, Int8Ty, allocsize, val_mem, 
                                    NULL, "arr");
+  // BasicBlock에 malloc 함수 호출을 삽입.
   BB->getInstList().push_back(cast<Instruction>(ptr_arr));
 
+  
+  // Tape setting
+  // @params i8 *%arr : BrainF tape 위치
+  // i8 0 : value (덮어쓸 값)
+  // i32 %d : tape의 길이
+  // i32 1 : align
+  // i1 0 : volatile 여부 ( LLVM memset insturction )
   //call void @llvm.memset.p0i8.i32(i8 *%arr, i8 0, i32 %d, i32 1, i1 0)
   {
     Value *memset_params[] = {
@@ -98,17 +112,21 @@ void BrainF::header(LLVMContext& C) {
       ConstantInt::get(C, APInt(1, 0))
     };
 
+    // memset 함수 호출
     CallInst *memset_call = builder->
       CreateCall(memset_func, memset_params);
     memset_call->setTailCall(false);
   }
 
+  // arrmax : BrainF tape의 마지막 포인터
   //%arrmax = getelementptr i8 *%arr, i32 %d
   if (comflag & flag_arraybounds) {
     ptr_arrmax = builder->
       CreateGEP(ptr_arr, ConstantInt::get(C, APInt(32, memtotal)), "arrmax");
   }
 
+  // TODO : %head.%d
+  // %head : BrainF tape의 중앙 위치
   //%head.%d = getelementptr i8 *%arr, i32 %d
   curhead = builder->CreateGEP(ptr_arr,
                                ConstantInt::get(C, APInt(32, memtotal/2)),
@@ -116,11 +134,14 @@ void BrainF::header(LLVMContext& C) {
 
 
 
+  
   //Function footer
 
+  // brainf 함수의 end 부분
   //brainf.end:
   endbb = BasicBlock::Create(C, label, brainf_func);
 
+  // BrainF tape 영역 해제
   //call free(i8 *%arr)
   endbb->getInstList().push_back(CallInst::CreateFree(ptr_arr, endbb));
 
@@ -132,11 +153,14 @@ void BrainF::header(LLVMContext& C) {
   //Error block for array out of bounds
   if (comflag & flag_arraybounds)
   {
+    //internal constant : 전역 상수 / String ( String 가져올때는 \
+      ConstDataArray::getString 을 쓴다.
     //@aberrormsg = internal constant [%d x i8] c"\00"
     Constant *msg_0 =
       ConstantDataArray::getString(C, "Error: The head has left the tape.",
                                    true);
 
+    // TODO : GlobalVariable ??
     GlobalVariable *aberrormsg = new GlobalVariable(
       *module,
       msg_0->getType(),
@@ -145,6 +169,7 @@ void BrainF::header(LLVMContext& C) {
       msg_0,
       "aberrormsg");
 
+    // puts 함수 정의
     //declare i32 @puts(i8 *)
     Function *puts_func = cast<Function>(module->
       getOrInsertFunction("puts", IntegerType::getInt32Ty(C),
@@ -155,6 +180,7 @@ void BrainF::header(LLVMContext& C) {
 
     //call i32 @puts(i8 *getelementptr([%d x i8] *@aberrormsg, i32 0, i32 0))
     {
+      // i32 0
       Constant *zero_32 = Constant::getNullValue(IntegerType::getInt32Ty(C));
 
       Constant *gep_params[] = {
@@ -169,6 +195,9 @@ void BrainF::header(LLVMContext& C) {
         msgptr
       };
 
+      
+      // TODO : 이 함수의 호출 시점은 ?
+      // TailCall이 아님.
       CallInst *puts_call =
         CallInst::Create(puts_func,
                          puts_params,
@@ -176,6 +205,7 @@ void BrainF::header(LLVMContext& C) {
       puts_call->setTailCall(false);
     }
 
+    // brainf.end 로 건너뜀.
     //br label %brainf.end
     BranchInst::Create(endbb, aberrorbb);
   }

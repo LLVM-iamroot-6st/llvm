@@ -39,7 +39,7 @@
 using namespace llvm;
 
 //Command line options
-
+// cl:opt<T> => command line의 인자를 자동으로 처리해주는 tool
 static cl::opt<std::string>
 InputFilename(cl::Positional, cl::desc("<input brainf>"));
 
@@ -85,6 +85,7 @@ void addMainFunction(Module *mod) {
 }
 
 int main(int argc, char **argv) {
+  // static cl에 세팅한 파라미터 처리
   cl::ParseCommandLineOptions(argc, argv, " BrainF compiler\n");
 
   LLVMContext &Context = getGlobalContext();
