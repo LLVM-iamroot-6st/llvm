@@ -88,8 +88,10 @@ void BrainF::header(LLVMContext& C) {
   Type* Int8Ty = IntegerType::getInt8Ty(C);
   Constant* allocsize = ConstantExpr::getSizeOf(Int8Ty);
   // getTurncOrBitCast : size가 같으면 bitCast,
+  // 왜 하는거지???
   allocsize = ConstantExpr::getTruncOrBitCast(allocsize, IntPtrTy);
   // BranF tape 영역 할당
+  // 어떻게 만들어지는거지???
   ptr_arr = CallInst::CreateMalloc(BB, IntPtrTy, Int8Ty, allocsize, val_mem, 
                                    NULL, "arr");
   // BasicBlock에 malloc 함수 호출을 삽입.
@@ -103,6 +105,7 @@ void BrainF::header(LLVMContext& C) {
   // i32 1 : align
   // i1 0 : volatile 여부 ( LLVM memset insturction )
   //call void @llvm.memset.p0i8.i32(i8 *%arr, i8 0, i32 %d, i32 1, i1 0)
+  //IR : call void @llvm.memset.p0i8.i32(i8* %malloccall, i8 0, i32 65536, i32 1, i1 false)
   {
     Value *memset_params[] = {
       ptr_arr,
@@ -115,6 +118,7 @@ void BrainF::header(LLVMContext& C) {
     // memset 함수 호출
     CallInst *memset_call = builder->
       CreateCall(memset_func, memset_params);
+    //Tail Call optimization disable
     memset_call->setTailCall(false);
   }
 
@@ -128,6 +132,21 @@ void BrainF::header(LLVMContext& C) {
   // TODO : %head.%d
   // %head : BrainF tape의 중앙 위치
   //%head.%d = getelementptr i8 *%arr, i32 %d
+  /*
+  getelementptr
+  The 'getelementptr' instruction is used to get the address of a subelement of an aggregate data structure.
+
+  %head = getelementptr i8* %malloccall, i32 32768
+
+  ------------------
+  |                |
+  |                |-
+  |--------32kb----- header
+  |                |+
+  |                |
+  |-----------------
+
+  */
   curhead = builder->CreateGEP(ptr_arr,
                                ConstantInt::get(C, APInt(32, memtotal/2)),
                                headreg);
