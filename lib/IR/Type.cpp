@@ -353,7 +353,7 @@ FunctionType::FunctionType(Type *Result, ArrayRef<Type*> Params,
 
 // FunctionType::get - The factory function for the FunctionType class.
 /*
-20140717
+20140727 [eundoo.song]
 LLVMContextImpl이 가지고 있는 FunctionTypes Cache에서
 typedef LLVMContextImpl::DenseMap<FunctionType*, bool, FunctionTypeKeyInfo> FunctionTypeMap;
 LLVMContextImpl::FunctionTypeMap FunctionTypes;
@@ -371,7 +371,7 @@ FunctionType *FunctionType::get(Type *ReturnType,
                                 ArrayRef<Type*> Params, bool isVarArg) {
   LLVMContextImpl *pImpl = ReturnType->getContext().pImpl;
   FunctionTypeKeyInfo::KeyTy Key(ReturnType, Params, isVarArg);
-  LLVMContextImpl::FunctionType:Map::iterator I =
+  LLVMContextImpl::FunctionTypeMap::iterator I =
     pImpl->FunctionTypes.find_as(Key);
   FunctionType *FT;
 

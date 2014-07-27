@@ -206,7 +206,7 @@ void Function::eraseFromParent() {
 //===----------------------------------------------------------------------===//
 // Function Implementation
 //===----------------------------------------------------------------------===//
-/*20140717 [eundoo.song]
+/*20140727 [eundoo.song]
 	Function 생성자
   - 
 */
@@ -219,7 +219,7 @@ Function::Function(FunctionType *Ty, LinkageTypes Linkage,
   SymTab = new ValueSymbolTable();
 
   // If the function has arguments, mark them as lazily built.
-  /*20140717 [eundoo.song]
+  /*20140727 [eundoo.song]
   생성할 함수의 인자가 있으면 인자를 바로 생성하지 않고 후에(아래와 같이 유저가 접근할때)  생성하도록 하기위해서 1를 세팅한다.  
   [*ValueSubclassData는]
 

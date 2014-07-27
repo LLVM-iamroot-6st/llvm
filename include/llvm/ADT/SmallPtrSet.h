@@ -283,7 +283,7 @@ public:
   }
 };
 
-/*20140727
+/*20140727 [eundoo.song]
 If SmallSize is 3, SmalSizePowTwo is 4
 If SmallSize is 4, SmalSizePowTwo is 4
 If SmallSize is 15, SmalSizePowTwo is 16
