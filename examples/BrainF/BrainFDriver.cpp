@@ -120,6 +120,7 @@ int main(int argc, char **argv) {
 
   //Gather the compile flags
   BrainF::CompileFlags cf = BrainF::flag_off;
+  //  -abc                             - Enable array bounds checking
   if (ArrayBoundsChecking)
     cf = BrainF::CompileFlags(cf | BrainF::flag_arraybounds);
 

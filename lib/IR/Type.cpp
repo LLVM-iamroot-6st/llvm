@@ -352,11 +352,26 @@ FunctionType::FunctionType(Type *Result, ArrayRef<Type*> Params,
 }
 
 // FunctionType::get - The factory function for the FunctionType class.
+/*
+20140717
+LLVMContextImpl이 가지고 있는 FunctionTypes Cache에서
+typedef LLVMContextImpl::DenseMap<FunctionType*, bool, FunctionTypeKeyInfo> FunctionTypeMap;
+LLVMContextImpl::FunctionTypeMap FunctionTypes;
+
+에서 인자로
+넘어온 FunctionType을 찾은 후 
+1) 있으면 해당 FunctionType* 반환
+2) 없으면 해당 FunctionType을 생성후 Cache(LLVMContext::FuncationTypeMap)에 저장
+ 
+???    
+new (FT) FunctionType(ReturnType, Params, isVarArg);
+: 어떻게 FT에 저장되는거지??? operator new를 재 구현한듯...
+*/
 FunctionType *FunctionType::get(Type *ReturnType,
                                 ArrayRef<Type*> Params, bool isVarArg) {
   LLVMContextImpl *pImpl = ReturnType->getContext().pImpl;
   FunctionTypeKeyInfo::KeyTy Key(ReturnType, Params, isVarArg);
-  LLVMContextImpl::FunctionTypeMap::iterator I =
+  LLVMContextImpl::FunctionType:Map::iterator I =
     pImpl->FunctionTypes.find_as(Key);
   FunctionType *FT;
 

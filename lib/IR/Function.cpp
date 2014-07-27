@@ -206,7 +206,10 @@ void Function::eraseFromParent() {
 //===----------------------------------------------------------------------===//
 // Function Implementation
 //===----------------------------------------------------------------------===//
-
+/*20140717 [eundoo.song]
+	Function 생성자
+  - 
+*/
 Function::Function(FunctionType *Ty, LinkageTypes Linkage,
                    const Twine &name, Module *ParentModule)
   : GlobalValue(PointerType::getUnqual(Ty),
@@ -216,10 +219,49 @@ Function::Function(FunctionType *Ty, LinkageTypes Linkage,
   SymTab = new ValueSymbolTable();
 
   // If the function has arguments, mark them as lazily built.
+  /*20140717 [eundoo.song]
+  생성할 함수의 인자가 있으면 인자를 바로 생성하지 않고 후에(아래와 같이 유저가 접근할때)  생성하도록 하기위해서 1를 세팅한다.  
+  [*ValueSubclassData는]
+
+		 bool Function::hasLazyArguments() const {
+				return getSubclassDataFromValue() & 1;
+		 }
+		 void CFunction::heckLazyArguments() const {
+				if (hasLazyArguments())
+					BuildLazyArguments();
+		 }
+		
+    즉 Function을 사용하는 사용자가
+		 arg_iterator Function::arg_begin() {
+				CheckLazyArguments();
+				return ArgumentList.begin();
+		 }
+			
+     const_arg_iterator Function::arg_begin() const {
+				CheckLazyArguments();
+				return ArgumentList.begin();
+		 }
+			
+     arg_iterator Function::arg_end() {
+				CheckLazyArguments();
+				return ArgumentList.end();
+		 }
+			
+     const_arg_iterator Function::arg_end() const {
+				CheckLazyArguments();
+				return ArgumentList.end();
+		 }
+		을  사용할 경우 이때 1이 세팅되었는지를 보고 초기화
+		그럼 이렇게 하는 이유는 함수 생성시에 인자 초기화는 부담이 된다는 것일까??? 
+		그런데.. 가독성을 위해  1,2,4 보다는 이름을 쓰는게 더 좋을듯...
+  */
   if (Ty->getNumParams())
     setValueSubclassData(1);   // Set the "has lazy arguments" bit.
 
   // Make sure that we get added to a function
+  /* 20140727 [eundoo.song] 
+   이게 뭔지???
+  */
   LeakDetector::addGarbageObject(this);
 
   if (ParentModule)
@@ -383,6 +425,19 @@ void Function::copyAttributesFrom(const GlobalValue *Src) {
 /// llvm/Intrinsics.h.  Results are cached in the LLVM context, subsequent
 /// requests for the same ID return results much faster from the cache.
 ///
+/*20140727 [eundoo.song]
+llvm/IR/Intrinsics.gen 가 컴파일시 모든 타겟의 Intrinsic 함수의 정보가 생성이 되고 
+Function::Function(FunctionType *Ty, LinkageTypes Linkage,  
+const Twine &name, Module *ParentModule)
+생성자에서 getIntrinsicID 함수를 통해 this 가 Intrinsic 함수인지를 확인해서
+맞으면 거기에 맞는 Attribute로 설정.
+
+각 타겟 별 Intrinsics 정보 (.gen 파일을 생성할때 사용하는듯???)
+- include/llvm/IR/IntrinsicsARM.td 등등
+
+추가 분석 : https://github.com/LLVM-iamroot-6st/study/wiki/2014.07.19
+see : Function::Function(...)
+*/
 unsigned Function::getIntrinsicID() const {
   const ValueName *ValName = this->getValueName();
   if (!ValName || !isIntrinsic())

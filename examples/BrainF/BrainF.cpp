@@ -76,22 +76,54 @@ void BrainF::header(LLVMContext& C) {
   brainf_func = cast<Function>(module->
     getOrInsertFunction("brainf", Type::getVoidTy(C), NULL));
 
-  // brainf 함수의 BasicBlock
+  //brainf 함수의 BasicBlock
   builder = new IRBuilder<>(BasicBlock::Create(C, label, brainf_func));
 
   // Memory allocation
   //%arr = malloc i8, i32 %d
   // int 값을 사용하기 위해 Mapping Class
+  //memtotal : 64kb
+  //APInt(unsigned numBits, uint64_t val, bool isSigned = false)
+  //BitWidth가 32비트인 64Kb 의 val_mem::ConstantInt를 얻음.
   ConstantInt *val_mem = ConstantInt::get(C, APInt(32, memtotal));
   BasicBlock* BB = builder->GetInsertBlock();
-  Type* IntPtrTy = IntegerType::getInt32Ty(C);
-  Type* Int8Ty = IntegerType::getInt8Ty(C);
+  Type* IntPtrTy = IntegerType::getInt32Ty(C);//32 bit type
+  Type* Int8Ty = IntegerType::getInt8Ty(C);//8 bit type
+  //1byte(8bit)를 반환할것으로 예상
   Constant* allocsize = ConstantExpr::getSizeOf(Int8Ty);
+	allocsize.dump();//test output : i64 ptrtoint (i8* getelementptr (i8* null, i32 1) to i64)
+ 
   // getTurncOrBitCast : size가 같으면 bitCast,
-  // 왜 하는거지???
+  // Dest : IntPtrTy(32bit)
+  // Src : allocsize(8bit)
+  // 왜 하는거지??? 결과 값음???
+  /*
+	  어떻게 allocsize를  확인할수 잇을까???
+		1)
+  	if(IsConstantOne(cast<Value*>(allocsize)))
+  	{
+  	  allocsize->dump();
+  	} 
+  
+		2)
+		std::cout<<reinterpret_cast<ConstantInt>(allocsize)->isOne();
+
+    3) 
+    APInt result = cast<Constant>(allocsize)->getUniqueInteger();
+    std::cout<<result.toString(10, true);
+
+		다 assert crash
+  */
   allocsize = ConstantExpr::getTruncOrBitCast(allocsize, IntPtrTy);
+	allocsize.dump();//test output : i32 ptrtoint (i8* getelementptr (i8* null, i32 1) to i32)
+
   // BranF tape 영역 할당
   // 어떻게 만들어지는거지???
+  // malloc(type, arraySize) becomes:
+  //       bitcast (i8 *malloc(typeSize*arraySize[32])) to type*[IntPtrTy]
+  //      Int8Ty :  allocation type
+  //      what is the difference between allocsize and arraysize??
+  //IR:%malloccall = tail call i8* @malloc(i32 mul (i32 ptrtoint (i8* getelementptr (i8* null, i32 1) to i32), i32 65536))
   ptr_arr = CallInst::CreateMalloc(BB, IntPtrTy, Int8Ty, allocsize, val_mem, 
                                    NULL, "arr");
   // BasicBlock에 malloc 함수 호출을 삽입.

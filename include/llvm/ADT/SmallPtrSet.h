@@ -283,6 +283,12 @@ public:
   }
 };
 
+/*20140727
+If SmallSize is 3, SmalSizePowTwo is 4
+If SmallSize is 4, SmalSizePowTwo is 4
+If SmallSize is 15, SmalSizePowTwo is 16
+Why is this implemented this way? any benfit of performance??
+*/
 /// SmallPtrSet - This class implements a set which is optimized for holding
 /// SmallSize or less elements.  This internally rounds up SmallSize to the next
 /// power of two if it is not already a power of two.  See the comments above

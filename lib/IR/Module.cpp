@@ -64,6 +64,13 @@ Module::~Module() {
 /// getNamedValue - Return the first global value in the module with
 /// the specified name, of arbitrary type.  This method returns null
 /// if a global with the specified name is not found.
+/*20140717[eundoo.song]
+ 
+ ???
+ 1. ValueSymbolTable은 언제 만들어지는 것일까???
+ 2. Module 과 Function 이 ValueSymbolTable을 따로 가지는 이유는 무엇일까?
+
+*/
 GlobalValue *Module::getNamedValue(StringRef Name) const {
   return cast_or_null<GlobalValue>(getValueSymbolTable().lookup(Name));
 }
@@ -91,6 +98,13 @@ void Module::getMDKindNames(SmallVectorImpl<StringRef> &Result) const {
 // it.  This is nice because it allows most passes to get away with not handling
 // the symbol table directly for this common task.
 //
+/*20140727[eundoo.song]
+ ValueSymbolTable에 이미 존재하는 함수면 type 검사를 한후 바로 리턴
+ 존재하지 않으면, 함수를 생성하여 FunctionList 에 추가하고 리턴.
+ 어떤 의미인지??? This is nice because it allows most passes to get away with not handling
+  the symbol table directly for this common task.
+
+*/
 Constant *Module::getOrInsertFunction(StringRef Name,
                                       FunctionType *Ty,
                                       AttributeSet AttributeList) {
@@ -107,6 +121,9 @@ Constant *Module::getOrInsertFunction(StringRef Name,
 
   // If the function exists but has the wrong type, return a bitcast to the
   // right type.
+  /*20140727 [eundoo.song] 
+    how can this be different???
+  */
   if (F->getType() != PointerType::getUnqual(Ty))
     return ConstantExpr::getBitCast(F, PointerType::getUnqual(Ty));
 
@@ -142,7 +159,15 @@ Constant *Module::getOrInsertFunction(StringRef Name,
                              FunctionType::get(RetTy, ArgTys, false),
                              AttributeList);
 }
-
+/*
+20140717
+함수 IR을 만들기 위한 준비.
+	- 인수 : 함수 정보 
+		(함수 이름, 리턴 타입는 고정 인자, 인자는 가변인자를 사용한다.)
+	- 인자가 있을 경우 ArgTys 에 push_back한다.
+  - FunctionType* 가져오고 
+  - 구현 함수(getOrInsertFunction) 호출
+*/
 Constant *Module::getOrInsertFunction(StringRef Name,
                                       Type *RetTy, ...) {
   va_list Args;

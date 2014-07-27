@@ -393,13 +393,16 @@ static Instruction *createMalloc(Instruction *InsertBefore,
 
   if (!IsConstantOne(ArraySize)) {
     if (IsConstantOne(AllocSize)) {
+			std::cout<<"eundoo.song :1"<<std::endl;
       AllocSize = ArraySize;         // Operand * 1 = Operand
     } else if (Constant *CO = dyn_cast<Constant>(ArraySize)) {
+			std::cout<<"eundoo.song :2"<<std::endl;
       Constant *Scale = ConstantExpr::getIntegerCast(CO, IntPtrTy,
                                                      false /*ZExt*/);
       // Malloc arg is constant product of type size and array size
       AllocSize = ConstantExpr::getMul(Scale, cast<Constant>(AllocSize));
     } else {
+			std::cout<<"eundoo.song :3"<<std::endl;
       // Multiply type size by the array size...
       if (InsertBefore)
         AllocSize = BinaryOperator::CreateMul(ArraySize, AllocSize,

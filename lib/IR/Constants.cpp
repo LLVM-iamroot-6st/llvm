@@ -1492,6 +1492,9 @@ Constant *ConstantExpr::getSExtOrBitCast(Constant *C, Type *Ty) {
   return getSExt(C, Ty);
 }
 
+//Scalar Bit Size를 비교해 같은며 Bit Cast 다른 Trunc Cast
+//Bit Cast : 비트 수의 변경 없이 타입만 변환
+//Trunc Cast : 타겟 비트수에 맞게 자르면서  타입 변환 
 Constant *ConstantExpr::getTruncOrBitCast(Constant *C, Type *Ty) {
   if (C->getType()->getScalarSizeInBits() == Ty->getScalarSizeInBits())
     return getBitCast(C, Ty);
@@ -1782,8 +1785,11 @@ Constant *ConstantExpr::getSizeOf(Type* Ty) {
   // sizeof is implemented as: (i64) gep (Ty*)null, 1
   // Note that a non-inbounds gep is used, as null isn't within any object.
   Constant *GEPIdx = ConstantInt::get(Type::getInt32Ty(Ty->getContext()), 1);
+  //#define offsetof(s,m)   ((unsigned int)&(((s *)0)->m))
+	//어떤 구조체(any type)에서 1 오프셋을 가지는 포인터 Contant를 반환
   Constant *GEP = getGetElementPtr(
                  Constant::getNullValue(PointerType::getUnqual(Ty)), GEPIdx);
+	//포인터를 Int를 변환하여 IR 생성하여 리턴 
   return getPtrToInt(GEP, 
                      Type::getInt64Ty(Ty->getContext()));
 }
