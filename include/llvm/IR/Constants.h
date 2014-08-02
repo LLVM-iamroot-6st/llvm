@@ -1028,6 +1028,16 @@ public:
     // This form of the function only exists to avoid ambiguous overload
     // warnings about whether to convert Idx to ArrayRef<Constant *> or
     // ArrayRef<Value *>.
+	/** 20140802 [eundoo.song]
+	 * cast from Constant *idx to Value
+	 *
+	 * Then how converted type(Value) is converted again to ArrayRef<Value *> IdxList???
+	 *   -> implicitly converted???
+	 *     -> /// Construct an ArrayRef from a single element.
+			 //implicitly converted -> T:Value  or T:Value*??? 
+			 // ArrayRef(const T &OneElt)
+			 //: Data(&OneElt), Length(1) {}
+	 */
     return getGetElementPtr(C, cast<Value>(Idx), InBounds);
   }
   static Constant *getGetElementPtr(Constant *C,

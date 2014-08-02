@@ -1786,7 +1786,17 @@ Constant *ConstantExpr::getSizeOf(Type* Ty) {
   // Note that a non-inbounds gep is used, as null isn't within any object.
   Constant *GEPIdx = ConstantInt::get(Type::getInt32Ty(Ty->getContext()), 1);
   //#define offsetof(s,m)   ((unsigned int)&(((s *)0)->m))
-	//어떤 구조체(any type)에서 1 오프셋을 가지는 포인터 Contant를 반환
+  //어떤 구조체(any type)에서 1 오프셋을 가지는 포인터 Contant를 반환
+  /** 20140731 [eundoo.song]
+   * 1. PointerType* PointerType::getUnqual(Int8Ty)
+   * -> Int8Ty *xxx
+   *
+   * 2. Constant* Constant::getNullValue(....);
+   * -> ConstantPointerNull - a constant pointer value that points to null
+   * -> Int8Ty *xxx = nullptr;
+   *
+   * 3. Constant* getGetElementPtr(Int8Ty *nullptr, Int32Ty 1);
+   */
   Constant *GEP = getGetElementPtr(
                  Constant::getNullValue(PointerType::getUnqual(Ty)), GEPIdx);
 	//포인터를 Int를 변환하여 IR 생성하여 리턴 

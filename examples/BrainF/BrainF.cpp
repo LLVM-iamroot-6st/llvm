@@ -77,6 +77,14 @@ void BrainF::header(LLVMContext& C) {
     getOrInsertFunction("brainf", Type::getVoidTy(C), NULL));
 
   //brainf 함수의 BasicBlock
+  /** 20140728 [eundoo.song]
+   *  1) BaiscBlock::Create
+   *  - 생성된 함수 brainf의 entry Basic Block 을 생성
+   *  - basicblock list의 끝에 추가한후 BasicBlock 자체를 반환
+   *    : header -> BasicBlock(brainf)
+   *
+   *  2) new IRBuilder<>(...)
+   */ 
   builder = new IRBuilder<>(BasicBlock::Create(C, label, brainf_func));
 
   // Memory allocation
@@ -87,32 +95,50 @@ void BrainF::header(LLVMContext& C) {
   //BitWidth가 32비트인 64Kb 의 val_mem::ConstantInt를 얻음.
   ConstantInt *val_mem = ConstantInt::get(C, APInt(32, memtotal));
   BasicBlock* BB = builder->GetInsertBlock();
+  /** 20140731 [eundoo.song]
+   * 미리 정해져 있는 LLVM 기본 타입 리턴
+   * LLVM Basic(built-in) type instances.
+	   Type VoidTy, LabelTy, HalfTy, FloatTy, DoubleTy, MetadataTy;
+       Type X86_FP80Ty, FP128Ty, PPC_FP128Ty, X86_MMXTy;
+       IntegerType Int1Ty, Int8Ty, Int16Ty, Int32Ty, Int64Ty;
+   * IntegerType Decl.
+   *   explicit IntegerType(LLVMContext &C, unsigned NumBits) : Type(C, IntegerTyID){
+   * Init.
+   *   Int32Ty(C, 32),
+   * return &C.pImpl->Int32Ty;
+   */
   Type* IntPtrTy = IntegerType::getInt32Ty(C);//32 bit type
+  /** 20140731 [eundoo.song]
+   * 미리 정해져 있는 LLVM 기본 타입 리턴
+   * Init. 
+   *	Int8Ty(C, 8),
+   * return &C.pImpl->Int8Ty;
+   */
   Type* Int8Ty = IntegerType::getInt8Ty(C);//8 bit type
   //1byte(8bit)를 반환할것으로 예상
   Constant* allocsize = ConstantExpr::getSizeOf(Int8Ty);
-	allocsize.dump();//test output : i64 ptrtoint (i8* getelementptr (i8* null, i32 1) to i64)
+  allocsize.dump();//test output : i64 ptrtoint (i8* getelementptr (i8* null, i32 1) to i64)
  
   // getTurncOrBitCast : size가 같으면 bitCast,
   // Dest : IntPtrTy(32bit)
   // Src : allocsize(8bit)
   // 왜 하는거지??? 결과 값음???
   /*
-	  어떻게 allocsize를  확인할수 잇을까???
-		1)
-  	if(IsConstantOne(cast<Value*>(allocsize)))
-  	{
-  	  allocsize->dump();
-  	} 
-  
-		2)
-		std::cout<<reinterpret_cast<ConstantInt>(allocsize)->isOne();
+	 어떻게 allocsize를  확인할수 잇을까???
+	 1)
+	 if(IsConstantOne(cast<Value*>(allocsize)))
+	 {
+		allocsize->dump();
+	 } 
 
-    3) 
-    APInt result = cast<Constant>(allocsize)->getUniqueInteger();
-    std::cout<<result.toString(10, true);
+	 2)
+	 std::cout<<reinterpret_cast<ConstantInt>(allocsize)->isOne();
 
-		다 assert crash
+	 3) 
+	 APInt result = cast<Constant>(allocsize)->getUniqueInteger();
+	 std::cout<<result.toString(10, true);
+
+	 다 assert crash
   */
   allocsize = ConstantExpr::getTruncOrBitCast(allocsize, IntPtrTy);
 	allocsize.dump();//test output : i32 ptrtoint (i8* getelementptr (i8* null, i32 1) to i32)

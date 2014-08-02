@@ -1943,6 +1943,10 @@ template<typename IndexTy>
 static Constant *ConstantFoldGetElementPtrImpl(Constant *C,
                                                bool inBounds,
                                                ArrayRef<IndexTy> Idxs) {
+ /** 20140802 [study]
+ *
+ *
+ */
   if (Idxs.empty()) return C;
   Constant *Idx0 = cast<Constant>(Idxs[0]);
   if ((Idxs.size() == 1 && Idx0->isNullValue()))

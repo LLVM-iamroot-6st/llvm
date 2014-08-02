@@ -80,6 +80,11 @@ public:
 
   /// \brief This specifies that created instructions should be appended to the
   /// end of the specified block.
+  /** 20140728 [eundoo.song]
+   * InsertPt 가 Instruction이 append 되는 시점인듯...
+   * BB와 같이 어떻게 쓰이는지 분석 필요??? 
+   * see : GetInsertBlock(), GetInsertPoint()
+   */
   void SetInsertPoint(BasicBlock *TheBB) {
     BB = TheBB;
     InsertPt = BB->end();
@@ -440,12 +445,19 @@ public:
   explicit IRBuilder(LLVMContext &C, MDNode *FPMathTag = nullptr)
     : IRBuilderBase(C, FPMathTag), Folder() {
   }
-
+  /** 20140728 [eundoo.song]
+   * default 인자가 없는 인자가 두개인데 왜 explicit을 붙였을까?
+   * 안 붙여도 암묵적 변환은 안될텐데???
+   */
   explicit IRBuilder(BasicBlock *TheBB, const T &F, MDNode *FPMathTag = nullptr)
     : IRBuilderBase(TheBB->getContext(), FPMathTag), Folder(F) {
     SetInsertPoint(TheBB);
   }
 
+  /** 20140728 [eundoo.song]
+   *  Folder : Constant Folder Optimization 정책을 default(ConstantFolder)로 설정.
+   *  SetInsertPoint :  BB 및 InsertPtr 설정
+   */
   explicit IRBuilder(BasicBlock *TheBB, MDNode *FPMathTag = nullptr)
     : IRBuilderBase(TheBB->getContext(), FPMathTag), Folder() {
     SetInsertPoint(TheBB);

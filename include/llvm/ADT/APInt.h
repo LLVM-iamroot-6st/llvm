@@ -100,6 +100,9 @@ class APInt {
   /// \brief Determine if this APInt just has one word to store value.
   ///
   /// \returns true if the number of bits <= 64, false otherwise.
+  /** 20140729 [eundoo.song]
+   * APInt에서는 64비트를 한워드로 치는듯..
+   */
   bool isSingleWord() const { return BitWidth <= APINT_BITS_PER_WORD; }
 
   /// \brief Determine which word a bit is in.

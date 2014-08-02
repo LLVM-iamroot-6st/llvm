@@ -42,7 +42,14 @@ LLVMContext &BasicBlock::getContext() const {
 // are not in the public header file...
 template class llvm::SymbolTableListTraits<Instruction, BasicBlock>;
 
-
+/** 20140728 [eundoo.song]
+ * 1. InsertBefore::BacicBlock* 과 NewParent::Function* 이 있을 경우
+ *    : InsertBefore Basic 블록의 바로 앞에 생성된 BasicBlock(this)을 넣는다.
+ * 2. InsertBefore가 없고 NewParent만 존재 할 경우
+ *    : List(ilist)의 마지막에 넣는다. 즉, BaseBlock List의 마지막에 추가. 
+ *
+ * SetName
+ */
 BasicBlock::BasicBlock(LLVMContext &C, const Twine &Name, Function *NewParent,
                        BasicBlock *InsertBefore)
   : Value(Type::getLabelTy(C), Value::BasicBlockVal), Parent(nullptr) {

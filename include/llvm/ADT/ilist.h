@@ -409,6 +409,12 @@ public:
     std::swap(Head, RHS.Head);
   }
 
+  /** 20140728 [eundoo.song]
+   * From
+   * prev <-> cur
+   * To
+   * prev <-> new <-> cur
+   */
   iterator insert(iterator where, NodeTy *New) {
     NodeTy *CurNode = where.getNodePtrUnchecked();
     NodeTy *PrevNode = this->getPrev(CurNode);
