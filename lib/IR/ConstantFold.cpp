@@ -1939,6 +1939,12 @@ static bool isIndexInRangeOfSequentialType(const SequentialType *STy,
   return true;
 }
 
+/** 20140809 [study]
+ *  BrainF
+ *  Type* Int8Ty = IntegerType::getInt8Ty(C);
+ *  Constant* allocsize = ConstantExpr::getSizeOf(Int8Ty);
+ *  에 의해서 들어오는 경로에서는 이 함수는 nullptr 리턴한
+ */
 template<typename IndexTy>
 static Constant *ConstantFoldGetElementPtrImpl(Constant *C,
                                                bool inBounds,

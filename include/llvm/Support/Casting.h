@@ -32,6 +32,9 @@ namespace llvm {
 /** 20140802 [study]
  * the default implementation
  */
+/** 20140805 [eundoo.song]
+ * general template for simplify_type
+ */
 template<typename From> struct simplify_type {
   typedef       From SimpleType;        // The real type this represents...
 
@@ -46,13 +49,29 @@ template<typename From> struct simplify_type {
  * template selection process
  * 추후 분석 필요...
  */
+/** 20140805 [eundoo.song]
+ * specialization template for simplify_type due to "const From"
+ */
 template<typename From> struct simplify_type<const From> {
-  typedef typename simplify_type<From>::SimpleType NonConstSimpleType;
-  typedef typename add_const_past_pointer<NonConstSimpleType>::type
+	/** 20140805 [eundoo.song]
+	 * 1. example  const int
+	 *  1) typedef simplify_type<int>::SimpleType NonConstSimpleType;
+	 *  1) typedef int NonConstSimpleType
+	 *  2) typedef const int SimpleType
+	 *  3) typedef const int &RetType
+	 * 
+	 * 2. example const int*
+	 *  1) typedef simplify_type<int*>::SimpleType NonConstSimpleType;
+	 *  1) typedef int *NonConstSimpleType
+	 *  2) typedef const int *SimpleType
+	 *  3) typedef const int *RetType
+	 */
+  typedef typename simplify_type<From>::SimpleType NonConstSimpleType; //1
+  typedef typename add_const_past_pointer<NonConstSimpleType>::type //2
     SimpleType;
-  typedef typename add_lvalue_reference_if_not_pointer<SimpleType>::type
+  typedef typename add_lvalue_reference_if_not_pointer<SimpleType>::type //3
     RetType;
-  static RetType getSimplifiedValue(const From& Val) {
+  static RetType getSimplifiedValue(const From& Val) { //4
     return simplify_type<From>::getSimplifiedValue(const_cast<From&>(Val));
   }
 };
@@ -103,6 +122,12 @@ struct isa_impl<
   static inline bool doit(const From &) { return true; }
 };
 
+/** 20140805 [eundoo.song]
+ * general template for isa_impl_cl
+ * 
+ * the below templates having the same name are specialized depending on its From type.
+ *
+ */
 template <typename To, typename From> struct isa_impl_cl {
   static inline bool doit(const From &Val) {
     return isa_impl<To, From>::doit(Val);
@@ -143,6 +168,11 @@ template <typename To, typename From> struct isa_impl_cl<To, const From*const> {
   }
 };
 
+
+/** 20140805 [eundoo.song]
+ *
+ * general template for isa_impl_wrap
+ */
 template<typename To, typename From, typename SimpleFrom>
 struct isa_impl_wrap {
   // When From != SimplifiedType, we can simplify the type some more by using
@@ -154,6 +184,10 @@ struct isa_impl_wrap {
   }
 };
 
+/** 20140805 [eundoo.song]
+ *
+ *  specialization template for isa_impl_wrap (when both From types are same) 
+ */
 template<typename To, typename FromTy>
 struct isa_impl_wrap<To, FromTy, FromTy> {
   // When From == SimpleType, we are as simple as we are going to get.
@@ -167,6 +201,12 @@ struct isa_impl_wrap<To, FromTy, FromTy> {
 //
 //  if (isa<Type>(myVal)) { ... }
 //
+/** 20140805 [eundoo.song]
+ * return isa_impl_wrap<X, const Y,  typename simplify_type<const Y>::SimpleType>::doit(Val);  
+ *
+ * return isa_impl_wrap<UndefValue, const Constant *,  typename simplify_type<const Constant*>::SimpleType>::doit(Val);
+ * return isa_impl_wrap<UndefValue, const Constant *,  typename simplify_type<const Constant*>::SimpleType>::doit(Val);
+ */
 template <class X, class Y>
 LLVM_ATTRIBUTE_UNUSED_RESULT inline bool isa(const Y &Val) {
   return isa_impl_wrap<X, const Y,

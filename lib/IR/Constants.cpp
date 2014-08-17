@@ -1873,6 +1873,17 @@ Constant *ConstantExpr::getSelect(Constant *C, Constant *V1, Constant *V2) {
 
 Constant *ConstantExpr::getGetElementPtr(Constant *C, ArrayRef<Value *> Idxs,
                                          bool InBounds) {
+/** 20140809 [study]
+ * reference : http://llvm.org/docs/LangRef.html#getelementptr-instruction
+ * <result> = getelementptr <pty>* <ptrval>{, <ty> <idx>}*
+ * <result> = getelementptr inbounds <pty>* <ptrval>{, <ty> <idx>}*
+ * <result> = getelementptr <ptr vector> ptrval, <vector index type> idx
+ * eg)
+ *  getelementptr {i32, <2 x i8>}* %svptr, i64 0, i32 1, i32 1
+ *  i64 0, i32 1, i32 1 이 여기서 idxs 인듯..
+ *
+ * GetElementPtr은 PointerType, PointerType을 멤버로 가지는 VectorType 밖에 지원안함.
+ */
   assert(C->getType()->isPtrOrPtrVectorTy() &&
          "Non-pointer type for constant GetElementPtr expression");
 
@@ -1880,6 +1891,9 @@ Constant *ConstantExpr::getGetElementPtr(Constant *C, ArrayRef<Value *> Idxs,
     return FC;          // Fold a few common cases.
 
   // Get the result type of the getelementptr!
+  /** 20140809 [study]
+   * C->getType : PointerType
+   */
   Type *Ty = GetElementPtrInst::getIndexedType(C->getType(), Idxs);
   assert(Ty && "GEP indices invalid!");
   unsigned AS = C->getType()->getPointerAddressSpace();

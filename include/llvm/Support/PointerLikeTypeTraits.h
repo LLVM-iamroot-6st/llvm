@@ -18,7 +18,11 @@
 #include "llvm/Support/DataTypes.h"
 
 namespace llvm {
-  
+
+
+/** 20140809 [study]
+ * return void*
+ */
 /// PointerLikeTypeTraits - This is a traits object that is used to handle
 /// pointer types and things that are just wrappers for pointers as a uniform
 /// entity.

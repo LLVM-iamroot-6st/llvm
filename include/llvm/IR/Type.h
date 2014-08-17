@@ -265,6 +265,12 @@ public:
   /// get the actual size for a particular target, it is reasonable to use the
   /// DataLayout subsystem to do this.
   ///
+  /** 20140809 [study]
+   * 각 타입이 사이즈를 가질수 있는지를 확인해서
+   * 가질수 잇으면 true 아니면 false
+   *
+   * What is Visited???
+   */
   bool isSized(SmallPtrSet<const Type*, 4> *Visited = nullptr) const {
     // If it's a primitive, it is always sized.
     if (getTypeID() == IntegerTyID || isFloatingPointTy() ||

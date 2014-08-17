@@ -1018,6 +1018,10 @@ public:
   static Constant *getGetElementPtr(Constant *C,
                                     ArrayRef<Constant *> IdxList,
                                     bool InBounds = false) {
+	/** 20140809 [study]
+	 * 이중 포인터 [x][y]에서 y에 대한 const로 캐스팅
+	 * refer : https://github.com/LLVM-iamroot-6st/study/wiki/int-*-const-*-p;
+	 */
     return getGetElementPtr(C, makeArrayRef((Value * const *)IdxList.data(),
                                             IdxList.size()),
                             InBounds);
@@ -1038,6 +1042,7 @@ public:
 			 // ArrayRef(const T &OneElt)
 			 //: Data(&OneElt), Length(1) {}
 	 */
+
     return getGetElementPtr(C, cast<Value>(Idx), InBounds);
   }
   static Constant *getGetElementPtr(Constant *C,

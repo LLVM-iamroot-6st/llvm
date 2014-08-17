@@ -246,6 +246,9 @@ public:
   
   /// isOpaque - Return true if this is a type with an identity that has no body
   /// specified yet.  These prints as 'opaque' in .ll files.
+  /** 20140809 [study]
+   * http://llvm.org/docs/LangRef.html#opaque-structure-types
+   */
   bool isOpaque() const { return (getSubclassData() & SCDB_HasBody) == 0; }
 
   /// isSized - Return true if this is a sized type.

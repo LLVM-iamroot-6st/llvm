@@ -1371,6 +1371,15 @@ GetElementPtrInst::GetElementPtrInst(const GetElementPtrInst &GEPI)
 ///
 template <typename IndexTy>
 static Type *getIndexedTypeInternal(Type *Ptr, ArrayRef<IndexTy> IdxList) {
+
+/** 20140809 [study]
+ * PointerType이면 그 타입의 멤버를 가져와 Agg에 저장
+ *  1) getScalarType으로 인해 Vector Type인데 멤버가 PointerType일 경우
+ *  2) Ptr이 PointerType  일 경우
+ *   Pty는 값을 가진다.
+ *
+ * 즉, GetElementPtr은 PointerType, PointerType을 멤버로 가지는 VectorType 밖에 지원안함.
+ */
   PointerType *PTy = dyn_cast<PointerType>(Ptr->getScalarType());
   if (!PTy) return nullptr;   // Type isn't a pointer type!
   Type *Agg = PTy->getElementType();
@@ -1381,9 +1390,19 @@ static Type *getIndexedTypeInternal(Type *Ptr, ArrayRef<IndexTy> IdxList) {
 
   // If there is at least one index, the top level type must be sized, otherwise
   // it cannot be 'stepped over'.
+  /** 20140809 [study]
+   * Agg 타입이 사이즈를 가지는 타입인지 확인
+   */
   if (!Agg->isSized())
     return nullptr;
 
+  /** 20140809 [study]
+   * IdxList의 size가 2 이상일 경우에만 for문을 돌며,
+   * CurIdx(1)와 IdxList의 사이즈를 비교해서 같으면 Agg를 리턴
+   *
+   * For은 왜 이렇게 할까???
+   *   agg는 마지막 valid 한 타입이 될듯 한데...
+   */
   unsigned CurIdx = 1;
   for (; CurIdx != IdxList.size(); ++CurIdx) {
     CompositeType *CT = dyn_cast<CompositeType>(Agg);
@@ -1394,7 +1413,9 @@ static Type *getIndexedTypeInternal(Type *Ptr, ArrayRef<IndexTy> IdxList) {
   }
   return CurIdx == IdxList.size() ? Agg : nullptr;
 }
-
+/** 20140809 [study]
+ *
+ */
 Type *GetElementPtrInst::getIndexedType(Type *Ptr, ArrayRef<Value *> IdxList) {
   return getIndexedTypeInternal(Ptr, IdxList);
 }

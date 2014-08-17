@@ -42,6 +42,10 @@ Type *Type::getPrimitiveType(LLVMContext &C, TypeID IDNumber) {
 
 /// getScalarType - If this is a vector type, return the element type,
 /// otherwise return this.
+/** 20140809 [study]
+ * Vector 타입이면 Vector 타입의 멤버 타입을 반환한다.
+ * 아니면 this 반환
+ */
 Type *Type::getScalarType() {
   if (VectorType *VTy = dyn_cast<VectorType>(this))
     return VTy->getElementType();
@@ -155,6 +159,15 @@ int Type::getFPMantissaWidth() const {
 /// isSizedDerivedType - Derived types like structures and arrays are sized
 /// iff all of the members of the type are sized as well.  Since asking for
 /// their size is relatively uncommon, move this operation out of line.
+/** 20140809 [study]
+ *  CompositeType(pointer type제외) 일 경우 속한 멤버가 Size를 가진다면 해당 CompositeType도 Size를 가진다고 판명하고 있다.
+
+ Array, Vector 일 경우 Element(멤버)가 같은 타입이므로 Element
+ 가 Size를 가지는지만 확인하면 된다.
+
+ 하지만 Struct 일 경우 여러 종류의 타입을 가질수 잇으므로
+ 다른 확인이 필요하다.  
+ */
 bool Type::isSizedDerivedType(SmallPtrSet<const Type*, 4> *Visited) const {
   if (const ArrayType *ATy = dyn_cast<ArrayType>(this))
     return ATy->getElementType()->isSized(Visited);
@@ -564,19 +577,43 @@ StructType *StructType::create(StringRef Name, Type *type, ...) {
   }
   return llvm::StructType::create(Ctx, StructFields, Name);
 }
-
+/** 20140809 [study]
+ *
+ *  Struct type가 사이즈를 가지는 타입인지 확인
+ *
+ */
 bool StructType::isSized(SmallPtrSet<const Type*, 4> *Visited) const {
+/** 20140809 [study]
+ *  Size 확인이 된 Type인지 확인.
+ *  Size 확인이 된 타입이면 SCDB_IsSized flag설정
+ */
   if ((getSubclassData() & SCDB_IsSized) != 0)
     return true;
+
+  /** 20140809 [study]
+   *Body를 가지는 Type인지 확인해서 가지지 않으면 opaque로 판단.
+   Struct 선언인지를 확하는듯...
+   */
   if (isOpaque())
     return false;
 
+  /** 20140809 [study]
+   * What is Visited???
+   * 
+   * hash table set 자료 구조인 Visited 에 this를 넣는다.
+   * return false인 경우는 hash table bucket이 이미 있는 경우이다.
+   * 무슨 목적???
+   */
   if (Visited && !Visited->insert(this))
     return false;
 
   // Okay, our struct is sized if all of the elements are, but if one of the
   // elements is opaque, the struct isn't sized *yet*, but may become sized in
   // the future, so just bail out without caching.
+  /** 20140809 [study]
+   *영어 주석 참고.
+   모든 멤버 함수에 대한 Size를 가지는 확인.
+   */
   for (element_iterator I = element_begin(), E = element_end(); I != E; ++I)
     if (!(*I)->isSized(Visited))
       return false;
@@ -584,6 +621,10 @@ bool StructType::isSized(SmallPtrSet<const Type*, 4> *Visited) const {
   // Here we cheat a bit and cast away const-ness. The goal is to memoize when
   // we find a sized type, as types can only move from opaque to sized, not the
   // other way.
+  /** 20140809 [study]
+   * SCDB_IsSized 설정
+   * 이 함수 자체가 const인데 setSubclassData이 const가 아니므로...
+   */
   const_cast<StructType*>(this)->setSubclassData(
     getSubclassData() | SCDB_IsSized);
   return true;

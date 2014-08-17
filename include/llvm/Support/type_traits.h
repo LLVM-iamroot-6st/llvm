@@ -74,12 +74,25 @@ struct add_lvalue_reference_if_not_pointer<
 
 /// \brief If T is a pointer to X, return a pointer to const X. If it is not,
 /// return const T.
+/** 20140805 [eundoo.song]
+ * general template for add_const_past_pointer
+ */
 template<typename T, typename Enable = void>
 struct add_const_past_pointer { typedef const T type; };
 
 template <typename T>
 struct add_const_past_pointer<
     T, typename std::enable_if<std::is_pointer<T>::value>::type> {
+/** 20140805 [eundoo.song]
+ * remove_pointer 한후 *는 다시 붙이는데 이유는???
+ *
+ */
+/** 20140809 [study]
+ * 포인터가 가르키는 내용에 const를 하려고 한다.
+ * example
+ *   if T is int*
+ *     typedef (const int) * type;
+ */
   typedef const typename std::remove_pointer<T>::type *type;
 };
 

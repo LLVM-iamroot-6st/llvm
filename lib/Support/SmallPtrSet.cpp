@@ -34,6 +34,9 @@ void SmallPtrSetImplBase::shrink_and_clear() {
   memset(CurArray, -1, CurArraySize*sizeof(void*));
 }
 
+/** 20140809 [study]
+ * hash table insert
+ */
 bool SmallPtrSetImplBase::insert_imp(const void * Ptr) {
   if (isSmall()) {
     // Check to see if it is already in the set.
