@@ -1950,14 +1950,18 @@ static Constant *ConstantFoldGetElementPtrImpl(Constant *C,
                                                bool inBounds,
                                                ArrayRef<IndexTy> Idxs) {
  /** 20140802 [study]
- *
+ * Idxs.empty() // false
+ * Idxs가 비어있으면, Base Constant를 반환한다.
  *
  */
+  //$ Idxs가 비어있으면 Base Constant를 반환한다.
   if (Idxs.empty()) return C;
+  //$ Idxs size가 1이지만 offset이 0이어서 비어있음. Base Constant 반환
   Constant *Idx0 = cast<Constant>(Idxs[0]);
   if ((Idxs.size() == 1 && Idx0->isNullValue()))
     return C;
 
+  //? UndefValue 자체에 대한 분석 Skip.
   if (isa<UndefValue>(C)) {
     PointerType *Ptr = cast<PointerType>(C->getType());
     Type *Ty = GetElementPtrInst::getIndexedType(Ptr, Idxs);
@@ -1981,11 +1985,17 @@ static Constant *ConstantFoldGetElementPtrImpl(Constant *C,
     }
   }
 
+  //? Constant가 Expression인 경우 Skip. ConstantExpr 뜯어보아야 함.
   if (ConstantExpr *CE = dyn_cast<ConstantExpr>(C)) {
     // Combine Indices - If the source pointer to this getelementptr instruction
     // is a getelementptr instruction, combine the indices of the two
     // getelementptr instructions into a single instruction.
     //
+    
+    /* 20140914
+     * ConstantExpr의 operator가 GEP인 경우, Combine Indices를 한다.
+     * 중첩된 GEP를 Folding하여 하나의 GEP로 만듦.
+     */
     if (CE->getOpcode() == Instruction::GetElementPtr) {
       Type *LastTy = nullptr;
       for (gep_type_iterator I = gep_type_begin(CE), E = gep_type_end(CE);
