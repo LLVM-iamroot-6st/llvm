@@ -72,6 +72,8 @@ int main() {
   // The '0' terminates the list of argument types.
   /** 20140510
    *  add1 함수를 생성해서 Add1F:Function*에 대입
+   *  20141004
+   *  int add1( int ) : 첫 번째 인자 값을 받아 1 더해서 return 해주는 함수.
    */
   Function *Add1F =
     cast<Function>(M->getOrInsertFunction("add1", Type::getInt32Ty(Context),
@@ -122,6 +124,8 @@ int main() {
   // arguments.
   /** 20140510
    * foo 함수 생성해서 FooF:Function*에 할당.
+   *  20141004
+   *  int foo( void )
    */
   Function *FooF =
     cast<Function>(M->getOrInsertFunction("foo", Type::getInt32Ty(Context),
@@ -147,6 +151,8 @@ int main() {
   
   /** 20140510
    * Tail Call : http://en.wikipedia.org/wiki/Tail_call
+   * 20141004
+   * return add1( 10 );
    */
   Add1CallRes->setTailCall(true);
 

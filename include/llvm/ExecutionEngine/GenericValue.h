@@ -7,6 +7,8 @@
 //
 //===----------------------------------------------------------------------===//
 //
+// 20141004
+// GenricValue 클래스는 임의의 LLVM Value를 표현할 수 있는 타입임.
 // The GenericValue class is used to represent an LLVM value of arbitrary type.
 //
 //===----------------------------------------------------------------------===//
@@ -42,6 +44,7 @@ struct GenericValue {
   // to make code faster, set GenericValue to zero could be omitted, but it is
   // potentially can cause problems, since GenericValue to store garbage
   // instead of zero.
+
   GenericValue() : IntVal(1,0) {UIntPairVal.first = 0; UIntPairVal.second = 0;}
   explicit GenericValue(void *V) : PointerVal(V), IntVal(1,0) { }
 };

@@ -134,6 +134,7 @@ extern "C" {
   }
 }
 
+// JIT 생성자. ( Module, TargetMachine, TargetJITInfo, JMM, GV)
 JIT::JIT(Module *M, TargetMachine &tm, TargetJITInfo &tji,
          JITMemoryManager *jmm, bool GVsWithCode)
   : ExecutionEngine(M), TM(tm), TJI(tji),
@@ -144,6 +145,9 @@ JIT::JIT(Module *M, TargetMachine &tm, TargetJITInfo &tji,
   jitstate = new JITState(M);
 
   // Initialize JCE
+  /* 20141004
+   *? 일종의 IRBuilder / InstGen 과 같은 역할을 하는 것으로 보임.
+   */
   JCE = createEmitter(*this, JMM, TM);
 
   // Register in global list of all JITs.

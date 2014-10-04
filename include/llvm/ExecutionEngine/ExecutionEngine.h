@@ -141,6 +141,7 @@ protected:
   // To avoid having libexecutionengine depend on the JIT and interpreter
   // libraries, the execution engine implementations set these functions to ctor
   // pointers at startup time if they are linked in.
+  // Ctor : Constructor
   static ExecutionEngine *(*JITCtor)(
     Module *M,
     std::string *ErrorStr,
