@@ -1,5 +1,6 @@
 add_subdirectory(BrainF)
 add_subdirectory(Fibonacci)
+add_subdirectory(Factorial)
 add_subdirectory(HowToUseJIT)
 add_subdirectory(Kaleidoscope)
 add_subdirectory(ModuleMaker)
